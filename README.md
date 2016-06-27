@@ -15,3 +15,13 @@ and the animation is not as it should be.
 To compare, define `SHOW_BUG` to `0`. This disables `estimatedRowHeight` 
 and `UITableViewAutomaticDimension` and instead 
 implements `tableView:heightForRowAtIndexPath:`.
+
+# UITableView bug with `deleteRowsAtIndexPaths`
+
+When using `deleteRowsAtIndexPaths` to delete many rows such that all visible cells will be deleted, 
+there is a exception thrown by `UITableView` that it is unable to determine the row rect to aninamate.
+`UITableView` will poke delegate for `heightForRowAt` or otherwise throw exception if delegate does not 
+provide implementation for `heightForRowAt`.
+
+iOS documentation explains that the data model changes are done before pushing changes onto `UITableView` 
+and then the delegate won't have correct data source for `heightForRowAt` to invoke.
