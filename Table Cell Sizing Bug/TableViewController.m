@@ -10,6 +10,17 @@
 #import "TableViewCell.h"
 
 #define SHOW_BUG 1
+/*
+ * Delete cells in batch such that only invisible cell left, that would move to visible section after 
+ * deletions done. However internals UITableView either request 'heightForRow...' if defined on delegate, 
+ * or fails with exception
+ * 'NSInternalInconsistencyException', reason: 'request for rect at invalid index path (<NSIndexPath: ..>)'
+ */
+#define DELETE_ALL_RETAIN_INVISIBLE_CELLS_BUG 1
+
+@interface TableViewController()
+@property (assign) deleteDone;
+@end
 
 @implementation TableViewController
 
@@ -31,8 +42,21 @@
     [tableView deselectRowAtIndexPath:indexPath animated:NO];
     if (indexPath.row != 0) {
         [tableView beginUpdates];
+#if DELETE_ALL_RETAIN_INVISIBLE_CELLS_BUG
+        if (!_deleteDone) {
+            _deleteDone = YES;
+            NSMutableArray *indexes = [[NSMutableArray alloc] initWithCapacity: 200];
+            for (size_t i = 0; i < 200) {
+                if (i == 195) // The cell 195 would be expected in top of list. 
+                    continue;
+                [indexes addObject: [NSIndexPath indexPathForRow:i inSection:0]];
+            }
+            [tableView deleteRowsAtIndexPaths:indexes withRowAnimation:UITableViewRowAnimationAutomatic];
+        }
+#else
         [tableView moveRowAtIndexPath:indexPath
                           toIndexPath:[NSIndexPath indexPathForRow:0 inSection:0]];
+#endif
         [tableView endUpdates];
     }
 }
@@ -50,6 +74,8 @@
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
+    if (_deleteDone)
+        return 1;
     return 200;
 }
 
